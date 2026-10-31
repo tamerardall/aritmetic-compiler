@@ -1,0 +1,497 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Derleyici Atölyesi</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Düzen: yukarıda boru hattı şeridi, altında her aşama için "açıklama | canlı görsel | Rust aracı" bölümü */
+:root{
+  --bg:#f2f5f7; --surface:#ffffff; --fg:#13202b; --muted:#5a6b78; --line:#d5dde3;
+  --accent:#0b6e75; --accent-soft:#d6ecee; --code-bg:#101c26; --code-fg:#d9e6ee;
+  --s1:#64748b; --s2:#2563eb; --s3:#0b6e75; --s4:#7c3aed; --s5:#b45309; --s6:#be185d; --s7:#15803d;
+  --err:#b91c1c; --err-soft:#fde8e8;
+  --f-display:"Bricolage Grotesque",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0c151c; --surface:#142029; --fg:#e4edf2; --muted:#93a5b2; --line:#26384a;
+  --accent:#4fc3cc; --accent-soft:#143a40; --code-bg:#0a1219; --code-fg:#d9e6ee;
+  --s1:#94a3b8; --s2:#7aa2ff; --s3:#4fc3cc; --s4:#b79bff; --s5:#f0a85a; --s6:#f27aaa; --s7:#58d68d;
+  --err:#ff8a8a; --err-soft:#3a1717; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c151c; --surface:#142029; --fg:#e4edf2; --muted:#93a5b2; --line:#26384a;
+  --accent:#4fc3cc; --accent-soft:#143a40; --code-bg:#0a1219; --code-fg:#d9e6ee;
+  --s1:#94a3b8; --s2:#7aa2ff; --s3:#4fc3cc; --s4:#b79bff; --s5:#f0a85a; --s6:#f27aaa; --s7:#58d68d;
+  --err:#ff8a8a; --err-soft:#3a1717; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:16px/1.6 var(--f-body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 64px}
+.wrap{max-width:980px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-display);line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(2rem,6vw,3.2rem);font-weight:800;letter-spacing:-.02em}
+h2{font-size:1.6rem;font-weight:800}
+p{margin:.5em 0}
+code,pre,.mono{font-family:var(--f-mono)}
+code{background:var(--accent-soft);padding:.05em .35em;border-radius:4px;font-size:.88em}
+.lead{color:var(--muted);max-width:62ch;font-size:1.05rem}
+.eyebrow{font:500 .75rem var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+
+/* input */
+.demo{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:22px;display:grid;gap:12px}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
+label{font:500 .72rem var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px}
+input[type=text],input[type=number]{font:500 1.05rem var(--f-mono);background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:9px 12px;width:100%}
+input:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.grow{flex:1 1 280px;min-width:0}.small{flex:0 0 90px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{font:400 .85rem var(--f-mono);background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:3px 11px;cursor:pointer}
+.chips button:hover{border-color:var(--accent)}
+
+/* pipeline strip */
+.pipe{display:flex;gap:0;margin:28px 0 8px;overflow-x:auto;padding-bottom:6px}
+.pipe a{flex:1 0 120px;text-decoration:none;color:var(--fg);position:relative;padding:12px 10px 12px 22px;
+  background:var(--surface);border-block:1px solid var(--line);font-size:.85rem;line-height:1.3;
+  clip-path:polygon(0 0,calc(100% - 14px) 0,100% 50%,calc(100% - 14px) 100%,0 100%,14px 50%)}
+.pipe a:first-child{clip-path:polygon(0 0,calc(100% - 14px) 0,100% 50%,calc(100% - 14px) 100%,0 100%);padding-left:12px}
+.pipe a b{display:block;font:800 .95rem var(--f-display);color:var(--c)}
+.pipe a span{color:var(--muted);font-size:.75rem}
+.pipe a:hover{background:var(--accent-soft)}
+.pipe a.bad{background:var(--err-soft)}
+
+/* sections */
+section.st{margin-top:34px;padding-top:22px;border-top:3px solid var(--c)}
+.st .hd{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.st .tag{font:500 .75rem var(--f-mono);color:var(--c);letter-spacing:.1em;text-transform:uppercase}
+.io{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 14px;font:400 .82rem var(--f-mono);color:var(--muted)}
+.io i{font-style:normal;color:var(--c)}
+.cols{display:grid;grid-template-columns:1fr;gap:16px}
+@media(min-width:820px){.cols.two{grid-template-columns:5fr 6fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
+.scroll{overflow-x:auto}
+.err{background:var(--err-soft);color:var(--err);border-radius:8px;padding:10px 14px;font:500 .9rem var(--f-mono)}
+.skip{color:var(--muted);font:400 .9rem var(--f-mono);padding:10px 0}
+
+/* tokens */
+.toks{display:flex;flex-wrap:wrap;gap:8px}
+.tok{border:1px solid var(--line);border-radius:6px;overflow:hidden;font-family:var(--f-mono);text-align:center;min-width:44px}
+.tok .k{font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;background:var(--c);color:var(--surface)}
+.tok .v{padding:5px 10px;font-size:1rem}
+.tok.NUM{--c:var(--s2)}.tok.ID{--c:var(--s4)}.tok.OP{--c:var(--s5)}.tok.PAR{--c:var(--s1)}
+.src{font:500 1.15rem var(--f-mono);display:flex;flex-wrap:wrap;margin-bottom:12px}
+.src span{padding:2px 1px;border-bottom:3px solid transparent}
+
+/* tree */
+svg text{font-family:var(--f-mono);fill:var(--fg)}
+svg .edge{stroke:var(--muted);stroke-width:1.5;fill:none}
+svg .nd{fill:var(--surface);stroke:var(--c);stroke-width:2}
+svg .nd.leaf{fill:var(--accent-soft)}
+svg .nd.fold{fill:var(--c);}
+svg .nd.fold + text{fill:var(--surface)}
+svg .lbl{font-size:14px;text-anchor:middle;dominant-baseline:central;font-weight:500}
+svg .sub{font-size:11px;text-anchor:middle;fill:var(--muted)}
+
+/* tables */
+table{border-collapse:collapse;width:100%;font:400 .88rem var(--f-mono)}
+th{text-align:left;font:500 .7rem var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:5px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr.last td{background:var(--accent-soft);font-weight:500}
+.stk{display:flex;gap:4px;min-height:26px;flex-wrap:wrap}
+.stk b{font-weight:500;background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:1px 8px}
+.stk b:last-child{border-color:var(--c);background:var(--accent-soft)}
+.op{color:var(--s5)}.arg{color:var(--s2)}
+
+/* code */
+pre{background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;margin:0;overflow-x:auto;font-size:.82rem;line-height:1.55}
+pre .c{color:#7f93a3}.k{color:#f0a85a}.t{color:#7ad6dc}.s{color:#9bd48a}
+.rust{margin-top:14px}
+.rust h3{font-size:1rem;margin-bottom:8px}
+.rust .crates{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.crates a{font:500 .8rem var(--f-mono);background:var(--surface);border:1px solid var(--line);color:var(--fg);border-radius:6px;padding:2px 9px;text-decoration:none}
+.crates a:hover{border-color:var(--c)}
+.crates .alt{color:var(--muted);align-self:center;font-size:.8rem}
+
+/* summary table */
+.sum{margin-top:40px}
+.sum .scroll{border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.sum td:first-child{font-weight:500}
+.sum td{vertical-align:top}
+@media(prefers-reduced-motion:no-preference){.pipe a{transition:background .15s}}
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">Rust ile derleyici yazmak</div>
+  <h1>Derleyici Atölyesi</h1>
+  <p class="lead">Bir derleyici, metni adım adım daha yapılı bir şeye çevirir. Aşağıya bir ifade yazın: her aşamanın çıktısını canlı görürsünüz. Her aşamanın altında da o işi Rust'ta yapan araçlar var.</p>
+
+  <div class="demo">
+    <div class="row">
+      <div class="grow"><label for="src">Kaynak kod</label><input type="text" id="src" value="(2 + 3) * 4 + x * 1" autocomplete="off" spellcheck="false"></div>
+      <div class="small"><label for="vx">x =</label><input type="number" id="vx" value="5"></div>
+      <div class="small"><label for="vy">y =</label><input type="number" id="vy" value="2"></div>
+    </div>
+    <div class="chips" id="examples"></div>
+  </div>
+
+  <nav class="pipe" id="pipe" aria-label="Derleyici aşamaları"></nav>
+
+  <div id="stages"></div>
+
+  <div class="sum">
+    <h2>Hepsi bir arada: Rust araç haritası</h2>
+    <p class="lead">Hepsini kullanmak zorunda değilsiniz. Küçük bir dilde lexer ve parser'ı elle yazmak, öğrenmek için en iyi yoldur.</p>
+    <div class="scroll" style="margin-top:12px">
+      <table>
+        <thead><tr><th>Aşama</th><th>Rust'ta kullanılan</th><th>Ne zaman?</th></tr></thead>
+        <tbody>
+          <tr><td>Lexer</td><td>elle <code>chars()</code> döngüsü, <code>logos</code></td><td>Elle yazmak 50 satır; <code>logos</code> hız ve düzen için.</td></tr>
+          <tr><td>Parser</td><td>elle recursive descent, <code>chumsky</code>, <code>lalrpop</code>, <code>nom</code>, <code>pest</code></td><td>Önce elle yazın; dil büyürse üretici kütüphaneye geçin.</td></tr>
+          <tr><td>AST</td><td><code>enum</code> + <code>Box</code>, <code>struct</code></td><td>Her zaman. Rust'ın en güçlü olduğu yer.</td></tr>
+          <tr><td>Anlam analizi</td><td><code>HashMap</code>, kendi tip denetleyiciniz</td><td>Hazır kütüphane yok, dilinize özgüdür.</td></tr>
+          <tr><td>Hata mesajı</td><td><code>ariadne</code>, <code>miette</code>, <code>codespan-reporting</code></td><td>Kullanıcı deneyimi için ilk günden.</td></tr>
+          <tr><td>Optimizasyon</td><td>AST/IR üzerinde <code>match</code> ile yeniden yazma</td><td>Önce sabit katlama gibi basit kurallar.</td></tr>
+          <tr><td>Kod üretimi</td><td><code>cranelift</code>, <code>inkwell</code> (LLVM), C/WASM çıktısı (<code>wasm-encoder</code>)</td><td>Hız gerekiyorsa. Başlangıçta bytecode VM yeter.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+/* ---------- Mini derleyici (JS ile, Rust'taki mantığın aynısı) ---------- */
+class CErr extends Error { constructor(msg, pos){ super(msg); this.pos = pos; } }
+
+function lex(src){
+  const out = []; let i = 0;
+  while(i < src.length){
+    const c = src[i];
+    if(/\s/.test(c)){ i++; continue; }
+    if(/[0-9.]/.test(c)){ let j=i; while(j<src.length && /[0-9.]/.test(src[j])) j++;
+      const t = src.slice(i,j); if(isNaN(Number(t))) throw new CErr('Geçersiz sayı: '+t, i);
+      out.push({k:'NUM', v:t, a:i, b:j}); i=j; continue; }
+    if(/[a-zA-Z_]/.test(c)){ let j=i; while(j<src.length && /\w/.test(src[j])) j++;
+      out.push({k:'ID', v:src.slice(i,j), a:i, b:j}); i=j; continue; }
+    if('+-*/'.includes(c)){ out.push({k:'OP', v:c, a:i, b:i+1}); i++; continue; }
+    if('()'.includes(c)){ out.push({k:'PAR', v:c, a:i, b:i+1}); i++; continue; }
+    throw new CErr(`Tanınmayan karakter: '${c}'`, i);
+  }
+  return out;
+}
+
+function parse(toks){
+  let p = 0;
+  const peek = () => toks[p];
+  const prec = {'+':1,'-':1,'*':2,'/':2};
+  function primary(){
+    const t = toks[p];
+    if(!t) throw new CErr('İfade beklenirken kaynak bitti', toks.length ? toks[toks.length-1].b : 0);
+    if(t.k==='NUM'){ p++; return {t:'num', v:Number(t.v)}; }
+    if(t.k==='ID'){ p++; return {t:'var', n:t.v, pos:t.a}; }
+    if(t.k==='OP' && t.v==='-'){ p++; const e = primary(); return {t:'bin', op:'-', l:{t:'num',v:0}, r:e}; }
+    if(t.v==='('){ p++; const e = expr(0); const c = toks[p];
+      if(!c || c.v!==')') throw new CErr("')' bekleniyordu", c ? c.a : toks[toks.length-1].b);
+      p++; return e; }
+    throw new CErr(`Beklenmeyen token: '${t.v}'`, t.a);
+  }
+  function expr(minP){
+    let l = primary();
+    while(peek() && peek().k==='OP' && prec[peek().v] > minP){
+      const op = toks[p++].v;
+      const r = expr(prec[op]);          // sol çağrışımlı: aynı öncelikte durur
+      l = {t:'bin', op, l, r};
+    }
+    return l;
+  }
+  const e = expr(0);
+  if(p < toks.length) throw new CErr(`Beklenmeyen token: '${toks[p].v}'`, toks[p].a);
+  return e;
+}
+
+function check(ast, env){
+  const used = new Set();
+  (function w(n){ if(n.t==='var'){ if(!(n.n in env)) throw new CErr(`Tanımsız değişken: ${n.n}`, n.pos); used.add(n.n); }
+                  if(n.t==='bin'){ w(n.l); w(n.r); } })(ast);
+  return used;
+}
+
+function optimize(n){
+  if(n.t!=='bin') return n;
+  const l = optimize(n.l), r = optimize(n.r);
+  if(l.t==='num' && r.t==='num' && !(n.op==='/' && r.v===0)){
+    const v = {'+':l.v+r.v,'-':l.v-r.v,'*':l.v*r.v,'/':l.v/r.v}[n.op];
+    return {t:'num', v, folded:true};
+  }
+  if(n.op==='*' && r.t==='num' && r.v===1) return {...l, folded:true};
+  if(n.op==='*' && l.t==='num' && l.v===1) return {...r, folded:true};
+  if(n.op==='+' && r.t==='num' && r.v===0) return {...l, folded:true};
+  return {t:'bin', op:n.op, l, r};
+}
+
+function gen(n, out=[]){
+  if(n.t==='num') out.push({op:'PUSH', arg:n.v});
+  else if(n.t==='var') out.push({op:'LOAD', arg:n.n});
+  else { gen(n.l,out); gen(n.r,out); out.push({op:{'+':'ADD','-':'SUB','*':'MUL','/':'DIV'}[n.op]}); }
+  return out;
+}
+
+function run(code, env){
+  const st = [], trace = [];
+  for(const ins of code){
+    if(ins.op==='PUSH') st.push(ins.arg);
+    else if(ins.op==='LOAD') st.push(env[ins.arg]);
+    else { const b = st.pop(), a = st.pop();
+      if(ins.op==='DIV' && b===0) throw new CErr('Sıfıra bölme (çalışma zamanı hatası)', 0);
+      st.push({ADD:a+b,SUB:a-b,MUL:a*b,DIV:a/b}[ins.op]); }
+    trace.push({ins, stack:[...st]});
+  }
+  return {result: st[0], trace};
+}
+
+/* ---------- Görseller ---------- */
+const fmt = v => Number.isInteger(v) ? String(v) : String(+v.toFixed(4));
+
+function treeSVG(ast, color){
+  let leaf = 0, maxD = 0; const GX = 64, GY = 62, R = 21;
+  function lay(n, d){ maxD = Math.max(maxD, d); n.d = d;
+    if(n.t==='bin'){ lay(n.l,d+1); lay(n.r,d+1); n.x = (n.l.x + n.r.x)/2; }
+    else n.x = leaf++ * GX; }
+  lay(ast, 0);
+  const W = Math.max(leaf-1,0)*GX + 2*R + 20, H = maxD*GY + 2*R + 22, ox = R + 10;
+  let edges = '', nodes = '';
+  (function draw(n){
+    const cx = n.x + ox, cy = n.d*GY + R + 6;
+    if(n.t==='bin') for(const ch of [n.l,n.r]){
+      edges += `<line class="edge" x1="${cx}" y1="${cy+R-2}" x2="${ch.x+ox}" y2="${ch.d*GY+R+6-R+2}"/>`; draw(ch); }
+    const label = n.t==='num' ? fmt(n.v) : n.t==='var' ? n.n : n.op;
+    const kind = n.t==='bin' ? 'BinOp' : n.t==='num' ? 'Sayi' : 'Degisken';
+    nodes += `<g><circle class="nd ${n.t!=='bin'?'leaf':''} ${n.folded?'fold':''}" cx="${cx}" cy="${cy}" r="${R}"/>
+      <text class="lbl" x="${cx}" y="${cy}">${esc(label)}</text>
+      <text class="sub" x="${cx}" y="${cy+R+12}" ${n.d===maxD?'':'display="none"'}>${kind}</text></g>`;
+  })(ast);
+  return `<div class="scroll"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="--c:${color};max-width:none" role="img" aria-label="Soyut sözdizimi ağacı">${edges}${nodes}</svg></div>`;
+}
+
+function astText(n, ind=0){
+  const pad = '  '.repeat(ind);
+  if(n.t==='num') return `${pad}Sayi(${fmt(n.v)})`;
+  if(n.t==='var') return `${pad}Degisken("${n.n}")`;
+  return `${pad}BinOp(${n.op}\n${astText(n.l,ind+1)}\n${astText(n.r,ind+1)}\n${pad})`;
+}
+
+/* ---------- Aşama tanımları ---------- */
+const STAGES = [
+ { id:'kaynak', no:'1', name:'Kaynak', sub:'düz metin', c:'--s1',
+   title:'Kaynak kod: yalnızca bir karakter dizisi',
+   text:'Derleyici için kaynak kod henüz bir anlam taşımaz; sadece <code>char</code> dizisidir. Bu aşamada yapılacak tek iş dosyayı okumak ve her karakterin yerini (satır, sütun) bilmektir. Hata mesajlarının güzel olması buna bağlıdır.',
+   io:['metin','→','<i>Vec&lt;char&gt;</i> + konumlar'],
+   crates:[['ariadne','https://docs.rs/ariadne'],['miette','https://docs.rs/miette'],['codespan-reporting','https://docs.rs/codespan-reporting']], alt:'konumlu hata gösterimi için',
+   rust:`<span class="k">pub struct</span> <span class="t">Span</span> { <span class="k">pub</span> start: <span class="t">usize</span>, <span class="k">pub</span> end: <span class="t">usize</span> }
+
+<span class="c">// Her token ve AST düğümü kaynaktaki yerini taşırsa,
+// "3. sütunda ')' bekleniyordu" demek kolaylaşır.</span>`,
+   render(S){ const bad = S.err && S.errShow ? S.err.pos : -1;
+     return `<div class="card"><div class="src">${[...S.src].map((ch,i)=>`<span style="${i===bad?'background:var(--err-soft);border-color:var(--err)':''}" title="konum ${i}">${ch===' '?'&nbsp;':esc(ch)}</span>`).join('')}</div>
+     <div class="mono" style="color:var(--muted);font-size:.8rem">${S.src.length} karakter. Fareyle üzerine gelince konum görünür.</div></div>`; } },
+
+ { id:'lexer', no:'2', name:'Lexer', sub:'sözcük analizi', c:'--s2',
+   title:'Lexer: karakterleri anlamlı parçalara böler',
+   text:'Lexer (tokenizer) boşlukları atar, <code>12</code> gibi karakter gruplarını tek bir sayı token\'ına, <code>x</code> gibi harfleri tek bir tanımlayıcıya çevirir. Çıktı, her biri tür etiketi taşıyan bir token listesidir.',
+   io:['<i>Vec&lt;char&gt;</i>','→','<i>Vec&lt;Token&gt;</i>'],
+   crates:[['logos','https://docs.rs/logos'],['elle: chars().peekable()','https://doc.rust-lang.org/std/iter/struct.Peekable.html']], alt:'kütüphane / elle',
+   rust:`<span class="k">use</span> logos::Logos;
+
+<span class="k">#[derive(Logos, Debug)]</span>
+<span class="k">#[logos(skip r"[ \\t\\n]+")]</span>
+<span class="k">enum</span> <span class="t">Token</span> {
+    <span class="k">#[regex(r"[0-9]+(\\.[0-9]+)?", |l| l.slice().parse().ok())]</span>
+    Sayi(<span class="t">f64</span>),
+    <span class="k">#[regex(r"[a-zA-Z_]\\w*", |l| l.slice().to_string())]</span>
+    Ad(<span class="t">String</span>),
+    <span class="k">#[token("+")]</span> Arti,   <span class="k">#[token("-")]</span> Eksi,
+    <span class="k">#[token("*")]</span> Carpi,  <span class="k">#[token("/")]</span> Bolu,
+    <span class="k">#[token("(")]</span> SolPar, <span class="k">#[token(")")]</span> SagPar,
+}`,
+   render(S){ return `<div class="card"><div class="src">${[...S.src].map((ch,i)=>{ const t=S.toks.find(t=>i>=t.a&&i<t.b);
+        const col = t ? ({NUM:'--s2',ID:'--s4',OP:'--s5',PAR:'--s1'})[t.k] : '--line';
+        return `<span style="border-color:var(${col})">${ch===' '?'&nbsp;':esc(ch)}</span>`}).join('')}</div>
+      <div class="toks">${S.toks.map(t=>`<div class="tok ${t.k}"><div class="k">${t.k==='NUM'?'Sayi':t.k==='ID'?'Ad':t.k==='OP'?'İşlem':'Parantez'}</div><div class="v">${esc(t.v)}</div></div>`).join('')}</div>
+      <div class="mono" style="color:var(--muted);font-size:.8rem;margin-top:10px">${S.toks.length} token. Boşluklar atıldı.</div></div>`; } },
+
+ { id:'parser', no:'3', name:'Parser', sub:'sözdizimi analizi', c:'--s3',
+   title:'Parser: düz listeden ağaç kurar',
+   text:'Token listesi hâlâ düzdür: <code>2 + 3 * 4</code> için önce hangi işlemin yapılacağını bilmez. Parser öncelik ve parantez kurallarını uygulayıp <b>soyut sözdizimi ağacı</b> (AST) üretir. Aşağıdaki ağacı okurken alttan yukarı hesaplayın: yapraklar değerdir, iç düğümler işlemdir.',
+   io:['<i>Vec&lt;Token&gt;</i>','→','<i>Expr</i> (AST)'],
+   crates:[['elle: recursive descent','https://craftinginterpreters.com/parsing-expressions.html'],['chumsky','https://docs.rs/chumsky'],['lalrpop','https://github.com/lalrpop/lalrpop'],['nom','https://docs.rs/nom'],['pest','https://pest.rs']], alt:'seçenekler',
+   rust:`<span class="k">pub enum</span> <span class="t">Expr</span> {
+    Sayi(<span class="t">f64</span>),
+    Degisken(<span class="t">String</span>),
+    BinOp { op: <span class="t">Op</span>, sol: <span class="t">Box</span>&lt;<span class="t">Expr</span>&gt;, sag: <span class="t">Box</span>&lt;<span class="t">Expr</span>&gt; },
+}
+<span class="c">// Box gerekli: Expr kendi içinde Expr tutuyor,
+// boyutu derleme zamanında sonsuz olurdu.</span>
+
+<span class="k">fn</span> ifade(&amp;<span class="k">mut</span> self, min_oncelik: <span class="t">u8</span>) -&gt; <span class="t">Result</span>&lt;<span class="t">Expr</span>, <span class="t">Hata</span>&gt; {
+    <span class="k">let mut</span> sol = self.birincil()?;
+    <span class="k">while let</span> <span class="t">Some</span>(op) = self.siradaki_islem() {
+        <span class="k">if</span> op.oncelik() &lt;= min_oncelik { <span class="k">break</span>; }
+        self.ilerle();
+        <span class="k">let</span> sag = self.ifade(op.oncelik())?;
+        sol = <span class="t">Expr</span>::BinOp { op, sol: <span class="t">Box</span>::new(sol), sag: <span class="t">Box</span>::new(sag) };
+    }
+    <span class="t">Ok</span>(sol)
+}`,
+   render(S){ return `<div class="cols two"><div class="card">${treeSVG(structuredClone(S.ast),'var(--s3)')}</div>
+      <pre style="font-size:.78rem">${esc(astText(S.ast))}</pre></div>`; } },
+
+ { id:'anlam', no:'4', name:'Anlam analizi', sub:'isim ve tip denetimi', c:'--s4',
+   title:'Anlam analizi: yazım doğru, ama anlamlı mı?',
+   text:'<code>x + </code> sözdizimi hatasıdır (parser yakalar). <code>z * 2</code> ise sözdizimi olarak doğrudur ama <code>z</code> hiçbir yerde tanımlanmamıştır. Bu aşama isimleri çözer, tipleri denetler ve bu tür hataları yakalar. Hazır kütüphanesi yoktur, çünkü kurallar dilinize aittir.',
+   io:['<i>Expr</i>','→','<i>doğrulanmış Expr</i> + sembol tablosu'],
+   crates:[['HashMap&lt;String, Tip&gt;','https://doc.rust-lang.org/std/collections/struct.HashMap.html']], alt:'kendiniz yazarsınız',
+   rust:`<span class="k">fn</span> denetle(e: &amp;<span class="t">Expr</span>, kapsam: &amp;<span class="t">HashMap</span>&lt;<span class="t">String</span>, <span class="t">f64</span>&gt;) -&gt; <span class="t">Result</span>&lt;(), <span class="t">Hata</span>&gt; {
+    <span class="k">match</span> e {
+        <span class="t">Expr</span>::Sayi(_) =&gt; <span class="t">Ok</span>(()),
+        <span class="t">Expr</span>::Degisken(ad) =&gt; kapsam.get(ad).map(|_| ())
+            .ok_or_else(|| <span class="t">Hata</span>::Tanimsiz(ad.clone())),
+        <span class="t">Expr</span>::BinOp { sol, sag, .. } =&gt; { denetle(sol, kapsam)?; denetle(sag, kapsam) }
+    }
+}
+<span class="c">// match tüm varyantları işlemeye zorlar: yeni bir düğüm
+// türü eklerseniz derleyici size nerede eksik kaldığını söyler.</span>`,
+   render(S){ return `<div class="card"><table><thead><tr><th>Sembol</th><th>Durum</th><th>Değer (ortam)</th></tr></thead><tbody>
+      ${[...S.used].map(n=>`<tr><td>${esc(n)}</td><td>tanımlı ✓</td><td>${fmt(S.env[n])}</td></tr>`).join('') || '<tr><td colspan="3" style="color:var(--muted)">Bu ifadede değişken yok.</td></tr>'}
+      </tbody></table><div class="mono" style="color:var(--muted);font-size:.8rem;margin-top:10px">Tanımsız bir ad yazın (ör. <b>z + 1</b>) ve bu aşamanın hata verdiğini görün.</div></div>`; } },
+
+ { id:'opt', no:'5', name:'Optimizasyon', sub:'ağacı sadeleştir', c:'--s5',
+   title:'Optimizasyon: aynı anlam, daha az iş',
+   text:'<code>(2 + 3) * 4</code> her çalıştığında aynı sonucu verir; bunu çalışma zamanında hesaplamak boşuna. <b>Sabit katlama</b> bunu derleme sırasında yapar. <code>x * 1</code> gibi kimlik kuralları da ağaçtan atılır. Dolu daire, bu aşamada sadeleşmiş düğümü gösterir.',
+   io:['<i>Expr</i>','→','<i>daha küçük Expr</i>'],
+   crates:[['match ile yeniden yazma','https://doc.rust-lang.org/book/ch18-00-patterns.html'],['egg (e-graph)','https://docs.rs/egg']], alt:'ileri düzey',
+   rust:`<span class="k">fn</span> sadelestir(e: <span class="t">Expr</span>) -&gt; <span class="t">Expr</span> {
+    <span class="k">match</span> e {
+        <span class="t">Expr</span>::BinOp { op, sol, sag } =&gt; {
+            <span class="k">let</span> (sol, sag) = (sadelestir(*sol), sadelestir(*sag));
+            <span class="k">match</span> (&amp;op, &amp;sol, &amp;sag) {
+                (_, <span class="t">Expr</span>::Sayi(a), <span class="t">Expr</span>::Sayi(b)) =&gt; <span class="t">Expr</span>::Sayi(op.uygula(*a, *b)),
+                (<span class="t">Op</span>::Carp, _, <span class="t">Expr</span>::Sayi(<span class="t">1.0</span>)) =&gt; sol,
+                _ =&gt; <span class="t">Expr</span>::BinOp { op, sol: <span class="t">Box</span>::new(sol), sag: <span class="t">Box</span>::new(sag) },
+            }
+        }
+        diger =&gt; diger,
+    }
+}`,
+   render(S){ const before = S.size(S.ast), after = S.size(S.opt);
+     return `<div class="cols two"><div class="card"><div class="eyebrow" style="color:var(--muted)">Önce · ${before} düğüm</div>${treeSVG(structuredClone(S.ast),'var(--muted)')}</div>
+      <div class="card"><div class="eyebrow" style="color:var(--s5)">Sonra · ${after} düğüm</div>${treeSVG(structuredClone(S.opt),'var(--s5)')}</div></div>`; } },
+
+ { id:'kod', no:'6', name:'Kod üretimi', sub:'bytecode / makine kodu', c:'--s6',
+   title:'Kod üretimi: ağacı düz talimat listesine çevirir',
+   text:'Ağacı sol-sağ-işlem sırasıyla (postfix) gezerseniz, bir <b>yığın makinesi</b> için talimat listesi elde edersiniz: iki değer yığına konur, <code>ADD</code> ikisini alıp sonucu geri koyar. Gerçek derleyici aynı fikri makine koduna (LLVM, Cranelift) ya da WebAssembly\'ye yazar.',
+   io:['<i>Expr</i>','→','<i>Vec&lt;Talimat&gt;</i>'],
+   crates:[['bytecode VM: elle','https://craftinginterpreters.com/a-bytecode-virtual-machine.html'],['cranelift','https://docs.rs/cranelift'],['inkwell (LLVM)','https://docs.rs/inkwell'],['wasm-encoder','https://docs.rs/wasm-encoder']], alt:'hedefe göre',
+   rust:`<span class="k">pub enum</span> <span class="t">Talimat</span> { Yukle(<span class="t">f64</span>), Oku(<span class="t">usize</span>), Topla, Cikar, Carp, Bol }
+
+<span class="k">fn</span> uret(e: &amp;<span class="t">Expr</span>, cikti: &amp;<span class="k">mut</span> <span class="t">Vec</span>&lt;<span class="t">Talimat</span>&gt;) {
+    <span class="k">match</span> e {
+        <span class="t">Expr</span>::Sayi(v) =&gt; cikti.push(<span class="t">Talimat</span>::Yukle(*v)),
+        <span class="t">Expr</span>::Degisken(ad) =&gt; cikti.push(<span class="t">Talimat</span>::Oku(slot(ad))),
+        <span class="t">Expr</span>::BinOp { op, sol, sag } =&gt; {
+            uret(sol, cikti);  uret(sag, cikti);
+            cikti.push(op.talimat());
+        }
+    }
+}`,
+   render(S){ return `<div class="card"><table><thead><tr><th>#</th><th>Talimat</th><th>Anlamı</th></tr></thead><tbody>
+      ${S.code.map((c,i)=>`<tr><td>${i}</td><td><span class="op">${c.op}</span> ${c.arg!==undefined?`<span class="arg">${esc(fmt2(c.arg))}</span>`:''}</td>
+      <td style="color:var(--muted)">${({PUSH:'sayıyı yığına koy',LOAD:'değişkeni yığına koy',ADD:'iki üstü topla',SUB:'iki üstü çıkar',MUL:'iki üstü çarp',DIV:'iki üstü böl'})[c.op]}</td></tr>`).join('')}
+      </tbody></table></div>`; } },
+
+ { id:'calis', no:'7', name:'Çalıştırma', sub:'VM / CPU', c:'--s7',
+   title:'Çalıştırma: yığın adım adım değişir',
+   text:'Sanal makine talimatları sırayla okur. Her satırın sağındaki sütun, o talimattan <b>sonra</b> yığının durumunu gösterir. Son satırda yığında tek bir değer kalır: programın sonucu.',
+   io:['<i>Vec&lt;Talimat&gt;</i>','→','<i>sonuç</i>'],
+   crates:[['elle: match ile döngü','https://craftinginterpreters.com/a-virtual-machine.html'],['cranelift-jit','https://docs.rs/cranelift-jit']], alt:'JIT için',
+   rust:`<span class="k">fn</span> calistir(kod: &amp;[<span class="t">Talimat</span>], ortam: &amp;[<span class="t">f64</span>]) -&gt; <span class="t">Result</span>&lt;<span class="t">f64</span>, <span class="t">Hata</span>&gt; {
+    <span class="k">let mut</span> yigin: <span class="t">Vec</span>&lt;<span class="t">f64</span>&gt; = <span class="t">Vec</span>::new();
+    <span class="k">for</span> t <span class="k">in</span> kod {
+        <span class="k">match</span> t {
+            <span class="t">Talimat</span>::Yukle(v) =&gt; yigin.push(*v),
+            <span class="t">Talimat</span>::Oku(i)   =&gt; yigin.push(ortam[*i]),
+            <span class="t">Talimat</span>::Topla    =&gt; { <span class="k">let</span> b = yigin.pop().unwrap();
+                              <span class="k">let</span> a = yigin.pop().unwrap(); yigin.push(a + b); }
+            <span class="c">// ... Cikar, Carp, Bol aynı kalıpta</span>
+            _ =&gt; {}
+        }
+    }
+    yigin.pop().ok_or(<span class="t">Hata</span>::BosYigin)
+}`,
+   render(S){ const n = S.run.trace.length;
+     return `<div class="card"><div class="scroll"><table><thead><tr><th>#</th><th>Talimat</th><th>Yığın (alttan üste)</th></tr></thead><tbody>
+      ${S.run.trace.map((r,i)=>`<tr class="${i===n-1?'last':''}"><td>${i}</td><td><span class="op">${r.ins.op}</span> ${r.ins.arg!==undefined?`<span class="arg">${esc(fmt2(r.ins.arg))}</span>`:''}</td>
+      <td><div class="stk" style="--c:var(--s7)">${r.stack.map(v=>`<b>${fmt(v)}</b>`).join('')}</div></td></tr>`).join('')}
+      </tbody></table></div>
+      <div style="margin-top:12px;font:800 1.5rem var(--f-display)">Sonuç: <span style="color:var(--s7)">${fmt(S.run.result)}</span></div></div>`; } },
+];
+const fmt2 = a => typeof a==='number' ? fmt(a) : a;
+
+/* ---------- Sayfa kurulumu ---------- */
+const pipe = $('#pipe'), stagesEl = $('#stages');
+pipe.innerHTML = STAGES.map(s=>`<a href="#${s.id}" id="p-${s.id}" style="--c:var(${s.c})"><b>${s.no}. ${s.name}</b><span>${s.sub}</span></a>`).join('');
+stagesEl.innerHTML = STAGES.map(s=>`
+<section class="st" id="${s.id}" style="--c:var(${s.c})">
+  <div class="hd"><span class="tag">Aşama ${s.no}</span><h2>${s.title}</h2></div>
+  <p class="lead">${s.text}</p>
+  <div class="io">${s.io.map(x=>x==='→'?'<span>→</span>':`<span>${x}</span>`).join('')}</div>
+  <div class="body" id="b-${s.id}"></div>
+  <div class="rust">
+    <h3>Rust tarafı</h3>
+    <div class="crates">${s.crates.map(c=>`<a href="${c[1]}" target="_blank" rel="noopener">${c[0]}</a>`).join('')}<span class="alt">${s.alt}</span></div>
+    <pre>${s.rust}</pre>
+  </div>
+</section>`).join('');
+
+const EXAMPLES = ['(2 + 3) * 4 + x * 1','2 + 3 * 4','10 / (y - 2)','x * (y + 3) - 1','z + 1','2 + * 3','(1 + 2'];
+$('#examples').innerHTML = '<span class="mono" style="font-size:.78rem;color:var(--muted);align-self:center">Dene:</span>' +
+  EXAMPLES.map(e=>`<button type="button">${esc(e)}</button>`).join('');
+$('#examples').addEventListener('click', e=>{ if(e.target.tagName==='BUTTON'){ $('#src').value = e.target.textContent; update(); } });
+
+const size = n => n.t==='bin' ? 1 + size(n.l) + size(n.r) : 1;
+
+function update(){
+  const src = $('#src').value;
+  const env = {x: Number($('#vx').value) || 0, y: Number($('#vy').value) || 0};
+  const S = {src, env, size, err:null};
+  let failAt = -1;
+  const order = ['kaynak','lexer','parser','anlam','opt','kod','calis'];
+  try{
+    if(!src.trim()) throw new CErr('Bir ifade yazın', 0);
+    S.toks = lex(src);                       failAt = 1;
+    if(!S.toks.length) throw new CErr('Bir ifade yazın', 0);
+    S.ast  = parse(S.toks);                  failAt = 2;
+    S.used = check(S.ast, env);              failAt = 3;
+    S.opt  = optimize(structuredClone(S.ast)); failAt = 4;
+    S.code = gen(S.opt);                     failAt = 5;
+    S.run  = run(S.code, env);               failAt = 6;
+    failAt = -1;
+  }catch(e){
+    if(!(e instanceof CErr)) throw e;
+    S.err = e; S.errShow = !e.message.startsWith('Sıfıra');
+    // hatayı hangi aşama verdi: lex hatası → 1, parse → 2, anlam → 3, çalışma → 6
+    failAt = e.message.startsWith('Sıfıra') ? 6 : e.message.startsWith('Tanımsız') ? 3
+           : (S.toks && !e.message.startsWith('Tanınmayan') && !e.message.startsWith('Geçersiz sayı')) ? 2 : 1;
+  }
+  STAGES.forEach((s,i)=>{
+    const el = $('#b-'+s.id), pl = $('#p-'+s.id);
+    pl.classList.toggle('bad', i===failAt);
+    if(failAt === -1 || i < failAt) el.innerHTML = s.render(S);
+    else if(i === failAt) el.innerHTML = `<div class="err">Hata · ${esc(S.err.message)}${i<=3?` (konum ${S.err.pos})`:''}</div>`;
+    else el.innerHTML = '<div class="skip">— bir önceki aşamada hata oluştu, bu aşamaya ulaşılamadı —</div>';
+  });
+}
+['src','vx','vy'].forEach(id=>$('#'+id).addEventListener('input', update));
+update();
+</script>
+
+</body></html>
