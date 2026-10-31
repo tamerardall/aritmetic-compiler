@@ -1,6 +1,6 @@
 # aritmetic-compiler
 
-Rust ile yazılmış, aritmetik ifadeleri bytecode'a derleyen ve çalıştıran küçük bir derleyici. Derleyicilerin nasıl çalıştığını öğrenmek için yapıldı. Dış bağımlılığı yok.
+A small compiler written in Rust that turns arithmetic expressions into bytecode and runs it. Built to learn how compilers work. No external dependencies.
 
 ```
 > 1 + 2 * 3
@@ -15,59 +15,59 @@ Rust ile yazılmış, aritmetik ifadeleri bytecode'a derleyen ve çalıştıran 
 Err: Division by zero
 ```
 
-## Nasıl çalışır?
+## How it works
 
-İfade dört aşamadan geçer:
+An expression goes through four stages:
 
 ```
 "1 + 2 * 3"
-   │  lexer.rs     metni token'lara böler
+   │  lexer.rs     splits the text into tokens
    ▼
 [Num(1) Plus Num(2) Star Num(3) Eof]
-   │  parser.rs    Pratt parser ile ağaç (AST) kurar
+   │  parser.rs    builds a syntax tree (AST) with a Pratt parser
    ▼
 Bin(1, Add, Bin(2, Mul, 3))
-   │  codegen.rs   ağacı alttan yukarı gezip komut listesi üretir
+   │  codegen.rs   walks the tree bottom-up and emits instructions
    ▼
 [Push(1), Push(2), Push(3), Mul, Add]
-   │  vm.rs        yığın tabanlı sanal makinede çalıştırır
+   │  vm.rs        runs them on a stack-based virtual machine
    ▼
 7
 ```
 
-| Dosya | Görev |
+| File | Role |
 |---|---|
-| `src/lexer.rs` | Karakterleri `Token`'a çevirir |
-| `src/parser.rs` | `Token` listesinden `Expr` ağacı kurar, işlem önceliğini çözer |
-| `src/codegen.rs` | `Expr` ağacından `Instr` listesi üretir |
-| `src/vm.rs` | `Instr` listesini yığın üzerinde çalıştırır |
-| `src/enums.rs` | `Token`, `Expr`, `Operation`, `Instr` tanımları |
-| `src/main.rs` | Konsoldan satır okuyan REPL |
+| `src/lexer.rs` | Turns characters into `Token`s |
+| `src/parser.rs` | Builds an `Expr` tree from the tokens and resolves operator precedence |
+| `src/codegen.rs` | Generates a list of `Instr` from the `Expr` tree |
+| `src/vm.rs` | Executes the instructions on a stack |
+| `src/enums.rs` | Definitions of `Token`, `Expr`, `Operation` and `Instr` |
+| `src/main.rs` | REPL that reads lines from the console |
 
-## Desteklenenler
+## Supported syntax
 
-| İşlem | Anlamı | Öncelik | Birleşme |
+| Operator | Meaning | Precedence | Associativity |
 |---|---|---|---|
-| `^` | üs alma | en yüksek | sağdan sola |
-| `-x` | tekli eksi | `^`'den düşük | |
-| `*` `/` | çarpma, bölme | | soldan sağa |
-| `+` `-` | toplama, çıkarma | en düşük | soldan sağa |
+| `^` | exponentiation | highest | right to left |
+| `-x` | unary minus | lower than `^` | |
+| `*` `/` | multiplication, division | | left to right |
+| `+` `-` | addition, subtraction | lowest | left to right |
 
-Parantez ve ondalık sayılar (`2.5`) da çalışır. Ondalık ayracı noktadır.
+Parentheses and decimal numbers (`2.5`) also work. The decimal separator is a dot.
 
-Hatalar program çökmeden mesaj olarak döner: tanınmayan karakter, kapanmayan parantez, fazladan token, boş yığın, sıfıra bölme.
+Errors are returned as messages instead of crashing: unexpected character, missing closing parenthesis, extra token, empty stack, division by zero.
 
-## Çalıştırma
+## Usage
 
-Rust 1.85 veya üstü gerekir (edition 2024).
+Requires Rust 1.85 or newer (edition 2024).
 
 ```
-cargo run      # REPL'i açar, çıkmak için Ctrl+D
-cargo test     # 20 birim testi
+cargo run      # starts the REPL, press Ctrl+D to exit
+cargo test     # runs the 20 unit tests
 ```
 
-## Sınırlar
+## Limitations
 
-- Sayılar `f64`. Tam sayılar yaklaşık 9 × 10^15'e kadar kesin kalır, üstü yuvarlanır.
-- Değişken ve fonksiyon yok.
-- Hata mesajlarında konum bilgisi yok.
+- Numbers are `f64`. Integers stay exact up to about 9 × 10^15, larger results are rounded.
+- No variables or functions.
+- Error messages do not include a position.
